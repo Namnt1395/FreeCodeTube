@@ -8,10 +8,12 @@ $params = array_merge(
 
 return [
     'id' => 'app-backend',
+    'name' => 'FreeCodeYube',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
     'modules' => [],
+    'language' => 'en-US',
     'components' => [
         'request' => [
             'csrfParam' => '_csrf-backend',
@@ -41,8 +43,12 @@ return [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                'video/update/<id>' => 'video/update'
             ],
         ],
+        'assetManager' => [
+            'appendTimestamp' => true
+        ]
 
     ],
     'params' => $params,
