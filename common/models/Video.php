@@ -2,10 +2,12 @@
 
 namespace common\models;
 
+use Imagine\Image\Box;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\helpers\FileHelper;
+use yii\imagine\Image;
 use yii\web\UploadedFile;
 
 /**
@@ -70,6 +72,8 @@ class Video extends \yii\db\ActiveRecord
             [['title', 'tags', 'video_name'], 'string', 'max' => 512],
             [['video_id'], 'unique'],
             ['has_thumbnail', 'default', 'value' => 0],
+            ['thumbnail', 'image', 'minWidth' => 1280],
+            ['video', 'file', 'extensions' => ['mp4']],
             ['status', 'default', 'value' => self::STATUS_UNLISTED],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
         ];
@@ -153,6 +157,10 @@ class Video extends \yii\db\ActiveRecord
                 FileHelper::createDirectory(dirname($thumbnailPath));
             }
             $this->thumbnail->saveAs($thumbnailPath);
+            Image::getImagine()
+                ->open($thumbnailPath)
+                ->thumbnail(new Box(1280, 1280))
+                ->save();
         }
         return true;
     }
@@ -165,5 +173,11 @@ class Video extends \yii\db\ActiveRecord
     public function getVideoLink()
     {
         return 'http://freecodetube.test/storage/videos/' . $this->video_id . '.mp4';
+    }
+
+    public function getThumbnailLink()
+    {
+        return $this->has_thumbnail ? Yii::$app->params['frontendUrl'] . 'storage/thumbnail/' . $this->video_id . '.jpg'
+            : '';
     }
 }
