@@ -1,60 +1,73 @@
 <?php
+
 namespace common\models;
 
 use Yii;
-use yii\base\NotSupportedException;
-use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
 /**
- * User model
+ * This is the model class for table "admins".
  *
- * @property integer $id
+ * @property int $user_id
+ * @property string|null $avatar
+ * @property string|null $full_name
  * @property string $username
- * @property string $password_hash
- * @property string $password_reset_token
- * @property string $verification_token
+ * @property string $password
  * @property string $email
- * @property string $auth_key
- * @property integer $status
- * @property integer $created_at
- * @property integer $updated_at
- * @property string $password write-only password
+ * @property string|null $mobile
+ * @property string|null $birthday
+ * @property string|null $address
+ * @property string $role ADMIN | USER
+ * @property int|null $change_pass_time
+ * @property int $status
+ * @property int $created_at
+ * @property int $created_by
+ * @property int|null $modified_at
+ * @property int|null $modified_by
  */
-class User extends ActiveRecord implements IdentityInterface
+class Admin extends ActiveRecord implements IdentityInterface
 {
-    const STATUS_DELETED = 0;
-    const STATUS_INACTIVE = 9;
-    const STATUS_ACTIVE = 10;
 
+    const STATUS_DELETED = 0;
+    const STATUS_INACTIVE = 0;
+    const STATUS_ACTIVE = 1;
+
+    /**
+     * @var mixed|null
+     */
 
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%user}}';
+        return 'admins';
     }
+
 
     /**
      * {@inheritdoc}
      */
-    public function behaviors()
+    public function attributeLabels()
     {
         return [
-            TimestampBehavior::className(),
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rules()
-    {
-        return [
-            ['status', 'default', 'value' => self::STATUS_INACTIVE],
-            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+            'user_id' => 'User ID',
+            'avatar' => 'Avatar',
+            'full_name' => 'Full Name',
+            'username' => 'Username',
+            'password' => 'Password',
+            'email' => 'Email',
+            'mobile' => 'Mobile',
+            'birthday' => 'Birthday',
+            'address' => 'Address',
+            'role' => 'Role',
+            'change_pass_time' => 'Change Pass Time',
+            'status' => 'Status',
+            'created_at' => 'Created At',
+            'created_by' => 'Created By',
+            'modified_at' => 'Modified At',
+            'modified_by' => 'Modified By',
         ];
     }
 
@@ -63,7 +76,7 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
+        return static::findOne(['user_id' => $id, 'status' => self::STATUS_ACTIVE]);
     }
 
     /**
@@ -142,22 +155,6 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getAuthKey()
-    {
-        return $this->auth_key;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function validateAuthKey($authKey)
-    {
-        return $this->getAuthKey() === $authKey;
-    }
-
-    /**
      * Validates password
      *
      * @param string $password password to validate
@@ -165,48 +162,17 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function validatePassword($password)
     {
-        return Yii::$app->security->validatePassword($password, $this->password_hash);
+        return Yii::$app->security->validatePassword($password, $this->password);
     }
 
-    /**
-     * Generates password hash from password and sets it to the model
-     *
-     * @param string $password
-     */
-    public function setPassword($password)
+
+    public function getAuthKey()
     {
-        $this->password_hash = Yii::$app->security->generatePasswordHash($password);
+        // TODO: Implement getAuthKey() method.
     }
 
-    /**
-     * Generates "remember me" authentication key
-     */
-    public function generateAuthKey()
+    public function validateAuthKey($authKey)
     {
-        $this->auth_key = Yii::$app->security->generateRandomString();
-    }
-
-    /**
-     * Generates new password reset token
-     */
-    public function generatePasswordResetToken()
-    {
-        $this->password_reset_token = Yii::$app->security->generateRandomString() . '_' . time();
-    }
-
-    /**
-     * Generates new token for email verification
-     */
-    public function generateEmailVerificationToken()
-    {
-        $this->verification_token = Yii::$app->security->generateRandomString() . '_' . time();
-    }
-
-    /**
-     * Removes password reset token
-     */
-    public function removePasswordResetToken()
-    {
-        $this->password_reset_token = null;
+        // TODO: Implement validateAuthKey() method.
     }
 }

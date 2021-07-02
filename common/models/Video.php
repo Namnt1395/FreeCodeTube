@@ -2,61 +2,42 @@
 
 namespace common\models;
 
-use Imagine\Image\Box;
 use Yii;
-use yii\behaviors\BlameableBehavior;
-use yii\behaviors\TimestampBehavior;
-use yii\helpers\FileHelper;
-use yii\imagine\Image;
-use yii\web\UploadedFile;
 
 /**
- * This is the model class for table "{{%video}}".
+ * This is the model class for table "videos".
  *
- * @property string $video_id
- * @property string $title
- * @property string|null $description
- * @property string|null $tags
- * @property int|null $status
- * @property int|null $has_thumbnail
- * @property string|null $video_name
- * @property int|null $created_at
- * @property int|null $updated_at
- * @property int|null $created_by
- *
- * @property User $createdBy
+ * @property int $id
+ * @property int $episode_id id của tập
+ * @property int $server_store Server lưu trữ: 1: google driver, 2...
+ * @property string|null $driver_id Id video khi upload file lên server store
+ * @property string|null $driver_id_new
+ * @property string|null $driver_origin_id
+ * @property string|null $driver_preload_id
+ * @property string|null $driver_preload_new
+ * @property string|null $user_upload tài khoản dùng để upload
+ * @property string $link_origin
+ * @property string|null $resolution Độ phân giải
+ * @property int|null $size bytes
+ * @property string|null $ip Ip của server tạo ra video
+ * @property int|null $convert_hls không còn sử dụng
+ * @property int $is_download 1: chưa tải xuống, 2: đã xong; 3: lỗi; 4: trên local, chờ upload
+ * @property int $processing 1:chưa xử lý, 2: đang xử lý: 3: đã xong
+ * @property int $is_hls 1: chưa xử lý; 2: đang xử lý; 3: đã xong(áp dụng với video google)
+ * @property int $is_preload 1: chưa xử lý, 2: đang xử lý, 3 : done
+ * @property int|null $is_meta 1:pending, 2: process; 3: done
+ * @property int $sync_aer 1: chưa đồng bộ, 2: đã đồng bộ
+ * @property int $created_at Thời gian tạo
+ * @property int|null $updated_at Thời gian update
  */
 class Video extends \yii\db\ActiveRecord
 {
-    const STATUS_UNLISTED = 0;
-    const STATUS_PUBLISHED = 1;
-    /**
-     * @var UploadedFile
-     */
-    public $video;
-
-    /**
-     * @var UploadedFile
-     */
-    public $thumbnail;
-
-    public function behaviors()
-    {
-        return [
-            TimestampBehavior::class,
-            [
-                'class' => BlameableBehavior::class,
-                'updatedByAttribute' => false
-            ]
-        ];
-    }
-
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%video}}';
+        return 'videos';
     }
 
     /**
@@ -65,17 +46,14 @@ class Video extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['video_id', 'title'], 'required'],
-            [['description'], 'string'],
-            [['status', 'has_thumbnail', 'created_at', 'updated_at', 'created_by'], 'integer'],
-            [['video_id'], 'string', 'max' => 16],
-            [['title', 'tags', 'video_name'], 'string', 'max' => 512],
-            [['video_id'], 'unique'],
-            ['has_thumbnail', 'default', 'value' => 0],
-            ['thumbnail', 'image', 'minWidth' => 1280],
-            ['video', 'file', 'extensions' => ['mp4']],
-            ['status', 'default', 'value' => self::STATUS_UNLISTED],
-            [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
+            [['episode_id', 'server_store', 'link_origin', 'created_at'], 'required'],
+            [['episode_id', 'server_store', 'size', 'convert_hls', 'is_download', 'processing', 'is_hls', 'is_preload', 'is_meta', 'sync_aer', 'created_at', 'updated_at'], 'integer'],
+            [['driver_id', 'driver_id_new', 'driver_origin_id', 'driver_preload_id', 'driver_preload_new'], 'string', 'max' => 255],
+            [['user_upload'], 'string', 'max' => 100],
+            [['link_origin'], 'string', 'max' => 2047],
+            [['resolution'], 'string', 'max' => 50],
+            [['ip'], 'string', 'max' => 31],
+            [['episode_id', 'server_store'], 'unique', 'targetAttribute' => ['episode_id', 'server_store']],
         ];
     }
 
@@ -85,99 +63,42 @@ class Video extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'video_id' => 'Video ID',
-            'title' => 'Title',
-            'description' => 'Description',
-            'tags' => 'Tags',
-            'status' => 'Status',
-            'thumbnail' => 'Thumbnail',
-            'has_thumbnail' => 'Has Thumbnail',
-            'video_name' => 'Video Name',
+            'id' => 'ID',
+            'episode_id' => 'Episode ID',
+            'server_store' => 'Server Store',
+            'driver_id' => 'Driver ID',
+            'driver_id_new' => 'Driver Id New',
+            'driver_origin_id' => 'Driver Origin ID',
+            'driver_preload_id' => 'Driver Preload ID',
+            'driver_preload_new' => 'Driver Preload New',
+            'user_upload' => 'User Upload',
+            'link_origin' => 'Link Origin',
+            'resolution' => 'Resolution',
+            'size' => 'Size',
+            'ip' => 'Ip',
+            'convert_hls' => 'Convert Hls',
+            'is_download' => 'Is Download',
+            'processing' => 'Processing',
+            'is_hls' => 'Is Hls',
+            'is_preload' => 'Is Preload',
+            'is_meta' => 'Is Meta',
+            'sync_aer' => 'Sync Aer',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'created_by' => 'Created By',
         ];
-    }
-
-    public function getStatusLabels()
-    {
-        return [
-            self::STATUS_UNLISTED => 'Unlisted',
-            self::STATUS_PUBLISHED => 'Published'
-        ];
-    }
-
-    /**
-     * Gets query for [[CreatedBy]].
-     *
-     * @return \yii\db\ActiveQuery|\common\models\query\UserQuery
-     */
-    public function getCreatedBy()
-    {
-        return $this->hasOne(User::className(), ['id' => 'created_by']);
     }
 
     /**
      * {@inheritdoc}
      * @return \common\models\query\VideoQuery the active query used by this AR class.
      */
-    public static function find(): query\VideoQuery
+    public static function find()
     {
         return new \common\models\query\VideoQuery(get_called_class());
     }
 
-    /**
-     * @throws \yii\base\Exception
-     */
-    public function save($runValidation = true, $attributeNames = null): bool
+    public function getLinkEpisode($episodeId)
     {
-        $isInsert = $this->isNewRecord;
-        if ($isInsert) {
-            $this->video_id = Yii::$app->security->generateRandomString(8);
-            $this->title = $this->video->name;
-            $this->video_name = $this->video->name;
-        }
-        if ($this->thumbnail) {
-            $this->has_thumbnail = 1;
-        }
-        $saved = parent::save($runValidation, $attributeNames);
-        if (!$saved) {
-            return false;
-        }
-        if ($isInsert) {
-            $videoPath = Yii::getAlias('@frontend/web/storage/videos/' . $this->video_id . '.mp4');
-            if (!is_dir(dirname($videoPath))) {
-                FileHelper::createDirectory(dirname($videoPath));
-            }
-            $this->video->saveAs($videoPath);
-        }
-        if ($this->thumbnail) {
-            $thumbnailPath = Yii::getAlias('@frontend/web/storage/thumbnail/' . $this->video_id . '.jpg');
-            if (!is_dir(dirname($thumbnailPath))) {
-                FileHelper::createDirectory(dirname($thumbnailPath));
-            }
-            $this->thumbnail->saveAs($thumbnailPath);
-            Image::getImagine()
-                ->open($thumbnailPath)
-                ->thumbnail(new Box(1280, 1280))
-                ->save();
-        }
-        return true;
-    }
-
-    public static function findOne($condition): ?Video
-    {
-        return parent::findOne($condition); // TODO: Change the autogenerated stub
-    }
-
-    public function getVideoLink()
-    {
-        return 'http://freecodetube.test/storage/videos/' . $this->video_id . '.mp4';
-    }
-
-    public function getThumbnailLink()
-    {
-        return $this->has_thumbnail ? Yii::$app->params['frontendUrl'] . 'storage/thumbnail/' . $this->video_id . '.jpg'
-            : '';
+        return "https://stream1.7anime.cc/api/watch?episode_id=" . $episodeId . "&key=84043fb63277515";
     }
 }

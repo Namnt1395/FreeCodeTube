@@ -30,12 +30,12 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $this->render('_video_item', ['model' => $model]);
                 }
             ],
-            [
-                'attribute' => 'status',
-                'content' => function ($model) {
-                    return $model->getStatusLabels()[$model->status];
-                }
-            ],
+//            [
+//                'attribute' => 'status',
+//                'content' => function ($model) {
+//                    return $model->getStatusLabels()[$model->status];
+//                }
+//            ],
             //'has_thumbnail',
             //'video_name',
             'created_at:datetime',

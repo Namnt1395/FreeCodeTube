@@ -2,6 +2,8 @@
 
 namespace backend\controllers;
 
+use common\models\Episodes;
+use common\models\Films;
 use Yii;
 use common\models\Video;
 use yii\data\ActiveDataProvider;
@@ -23,13 +25,13 @@ class VideoController extends Controller
     {
         return [
             'access' => [
-               'class' => AccessControl::class,
-               'rules' => [
-                   [
-                       'allow' => true,
-                       'roles'=> ['@']
-                   ]
-               ]
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => ['@']
+                    ]
+                ]
             ],
             'verbs' => [
                 'class' => VerbFilter::className(),
@@ -44,8 +46,23 @@ class VideoController extends Controller
      * Lists all Video models.
      * @return mixed
      */
+    /**
+     * @return string
+     *
+                 $query->innerjoin($filmTbl, "{$episodeTbl}.film_id = {$filmTbl}.id");
+                if ($this->keyword) {
+                $query->andWhere(["LIKE", "{$filmTbl}.name", "$this->keyword"]);
+                }
+
+     */
     public function actionIndex()
     {
+        $query = Video::find();
+
+        $episodeTbl = Episodes::tableName();
+        $filmTbl = Films::tableName();
+
+
         $dataProvider = new ActiveDataProvider([
             'query' => Video::find(),
         ]);
